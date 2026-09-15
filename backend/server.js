@@ -1,4 +1,14 @@
 const express = require("express");
+const dotenv = require("dotenv");
+
+dotenv.config();
+
+if (!process.env.TWITCH_CLIENT_ID || !process.env.TWITCH_ACCESS_TOKEN) {
+  console.error("Missing Twitch environment variables.");
+  process.exit(1);
+}
+
+console.log("Twitch environment variables loaded.");
 
 const app = express();
 const PORT = 3000;
