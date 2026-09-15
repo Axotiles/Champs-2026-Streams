@@ -143,6 +143,24 @@
    EDIT THIS: one entry per team, one entry per player/caster.
    `channel` = the exact Twitch username (from the URL twitch.tv/<username>)
    ============================================================ */
+  const REGIONS = [
+  {
+    name: "AMERICAS",
+    teams: ["100 Thieves", "LOUD", "NRG", "G2 Esports"]
+  },
+  {
+    name: "APAC",
+    teams: ["Global Esports", "NS RedForce", "Paper Rex", "T1"]
+  },
+  {
+    name: "EMEA",
+    teams: ["Karmine Corp", "Team Liquid", "FUT Esports", "Team Vitality"]
+  },
+  {
+    name: "CHINA",
+    teams: ["TYLOO", "JD Gaming", "EDward Gaming", "XLG Esports"]
+  }
+];
 const TEAMS = [
   {
     name: "100 Thieves",
@@ -262,36 +280,108 @@ const TEAMS = [
   ]},
 ];
 
-let selectedTeam = TEAMS[0].name;
+let selectedTeam = null;
 let cols = 2;
+  
+const expandedRegions = new Set();
 
-function renderTeamRail(){
+function renderTeamRail() {
   const rail = document.getElementById('teamRail');
   rail.innerHTML = '';
 
   const allBtn = document.createElement('button');
-  allBtn.className = 'team-btn' + (selectedTeam === 'ALL' ? ' selected' : '');
-  allBtn.textContent = 'All teams';
-  allBtn.onclick = () => { selectedTeam = 'ALL'; render(); };
+  allBtn.className =
+    'team-btn' + (selectedTeam === null ? ' selected' : '');
+
+  allBtn.textContent = 'All Teams';
+
+  allBtn.onclick = () => {
+    selectedTeam = null;
+    render();
+  };
+
   rail.appendChild(allBtn);
 
-  TEAMS.forEach(team => {
-    const btn = document.createElement('button');
-    btn.className = 'team-btn' + (selectedTeam === team.name ? ' selected' : '');
-    btn.innerHTML = `${team.name} <span class="count">${team.players.length}</span>`;
-    btn.onclick = () => { selectedTeam = team.name; render(); };
-    rail.appendChild(btn);
+  REGIONS.forEach(region => {
+
+    const regionBtn = document.createElement('button');
+
+    regionBtn.className =
+      'team-btn' +
+      (expandedRegions.has(region.name) ? ' selected' : '');
+
+    regionBtn.textContent =
+      `${expandedRegions.has(region.name) ? '▼' : '►'} ${region.name}`;
+
+    regionBtn.onclick = () => {
+
+      if (expandedRegions.has(region.name)) {
+        expandedRegions.delete(region.name);
+      } else {
+        expandedRegions.add(region.name);
+      }
+
+      render();
+    };
+
+    rail.appendChild(regionBtn);
+
+    if (expandedRegions.has(region.name)) {
+
+      region.teams.forEach(teamName => {
+
+        const team = TEAMS.find(t => t.name === teamName);
+
+        if (!team) return;
+
+        const btn = document.createElement('button');
+
+        btn.className =
+          'team-btn' +
+          (selectedTeam === team.name ? ' selected' : '');
+
+        btn.style.marginLeft = '10px';
+
+        btn.innerHTML =
+          `${team.name} <span class="count">${team.players.length}</span>`;
+
+        btn.onclick = () => {
+
+          if (selectedTeam === team.name) {
+            selectedTeam = null;
+          } else {
+            selectedTeam = team.name;
+          }
+
+          render();
+        };
+
+        rail.appendChild(btn);
+      });
+    }
   });
 }
 
-function currentPlayers(){
-  if (selectedTeam === 'ALL'){
-    return TEAMS.flatMap(t => t.players.map(p => ({...p, team: t.name, tag: t.tag})));
-  }
-  const team = TEAMS.find(t => t.name === selectedTeam);
-  return team.players.map(p => ({...p, team: team.name, tag: team.tag}));
-}
+function currentPlayers() {
 
+  if (!selectedTeam) {
+    return TEAMS.flatMap(t =>
+      t.players.map(p => ({
+        ...p,
+        team: t.name,
+        tag: t.tag
+      }))
+    );
+  }
+
+  const team = TEAMS.find(t => t.name === selectedTeam);
+
+  return team.players.map(p => ({
+    ...p,
+    team: team.name,
+    tag: team.tag
+  }));
+}
 function renderGrid(){
   const grid = document.getElementById('grid');
   const emptyState = document.getElementById('emptyState');
