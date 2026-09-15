@@ -143,6 +143,8 @@
    EDIT THIS: one entry per team, one entry per player/caster.
    `channel` = the exact Twitch username (from the URL twitch.tv/<username>)
    ============================================================ */
+  const TWITCH_CLIENT_ID = "1hwgxkzfmawdgbgainsrzw8q6iq4yf";
+const TWITCH_ACCESS_TOKEN = "dmyymh188bwoob5p3c7qwgmonmtuih";
   const REGIONS = [
   {
     name: "AMERICAS",
@@ -280,18 +282,43 @@ const TEAMS = [
   ]},
 ];
 
+  /* ==========================
+   TWITCH SETTINGS
+   ========================== */
+  
 let selectedTeam = null;
 let cols = 2;
-  
+
 const expandedRegions = new Set();
+
+let showLiveOnly = true;
+let liveChannels = new Set();
 
 function renderTeamRail() {
   const rail = document.getElementById('teamRail');
   rail.innerHTML = '';
 
+  const liveBtn = document.createElement('button');
+
+liveBtn.className =
+  'team-btn' + (showLiveOnly ? ' selected' : '');
+
+liveBtn.textContent = '🔴 LIVE NOW';
+
+liveBtn.onclick = () => {
+
+  showLiveOnly = !showLiveOnly;
+
+  renderGrid();
+
+};
+
+rail.appendChild(liveBtn);
+  
   const allBtn = document.createElement('button');
   allBtn.className =
     'team-btn' + (selectedTeam === null ? ' selected' : '');
+  
 
   allBtn.textContent = 'All Teams';
 
@@ -361,27 +388,84 @@ function renderTeamRail() {
     }
   });
 }
+  
+async function fetchLiveChannels() {
 
+  const channels = TEAMS
+    .flatMap(team => team.players)
+    .map(player => player.channel)
+    .filter(channel => channel);
+
+  if (!channels.length) return;
+
+  const query = channels
+    .map(channel => `user_login=${encodeURIComponent(channel)}`)
+    .join('&');
+
+  try {
+
+    const response = await fetch(
+      `https://api.twitch.tv/helix/streams?${query}`,
+      {
+        headers: {
+          "Client-Id": "1hwgxkzfmawdgbgainsrzw8q6iq4yf",
+          "Authorization": `Bearer ${dmyymh188bwoob5p3c7qwgmonmtuih}`
+        }
+      }
+    );
+
+    const data = await response.json();
+
+    liveChannels.clear();
+
+    data.data.forEach(stream => {
+      liveChannels.add(stream.user_login.toLowerCase());
+    });
+
+  } catch (err) {
+
+    console.error("Twitch API Error:", err);
+
+  }
+}
 function currentPlayers() {
 
+  let players;
+
   if (!selectedTeam) {
-    return TEAMS.flatMap(t =>
-      t.players.map(p => ({
-        ...p,
-        team: t.name,
-        tag: t.tag
+
+    players = TEAMS.flatMap(team =>
+      team.players.map(player => ({
+        ...player,
+        team: team.name,
+        tag: team.tag
       }))
     );
+
+  } else {
+
+    const team = TEAMS.find(t => t.name === selectedTeam);
+
+    players = team.players.map(player => ({
+      ...player,
+      team: team.name,
+      tag: team.tag
+    }));
+
   }
 
-  const team = TEAMS.find(t => t.name === selectedTeam);
+  if (showLiveOnly) {
 
-  return team.players.map(p => ({
-    ...p,
-    team: team.name,
-    tag: team.tag
-  }));
+    players = players.filter(player =>
+      player.channel &&
+      liveChannels.has(player.channel.toLowerCase())
+    );
+
+  }
+
+  return players;
 }
+  
 function renderGrid(){
   const grid = document.getElementById('grid');
   const emptyState = document.getElementById('emptyState');
@@ -391,10 +475,16 @@ function renderGrid(){
   const players = currentPlayers();
 
   if (players.length === 0){
-    emptyState.style.display = 'block';
-    grid.style.display = 'none';
-    return;
-  }
+
+  emptyState.style.display = 'block';
+  grid.style.display = 'none';
+
+  emptyState.textContent = showLiveOnly
+    ? 'No tracked players are currently live.'
+    : 'No channels added for this team yet.';
+
+  return;
+}
   emptyState.style.display = 'none';
   grid.style.display = 'grid';
 
@@ -409,7 +499,8 @@ function renderGrid(){
 
     if (p.channel) {
       const iframe = document.createElement('iframe');
-      iframe.src = `https://player.twitch.tv/?channel=${encodeURIComponent(p.channel)}&parent=${encodeURIComponent(parentDomain)}&muted=true`;
+      iframe.src =
+  `https://player.twitch.tv/?channel=${encodeURIComponent(p.channel)}&parent=${encodeURIComponent(parentDomain)}&muted=true`;
       iframe.allowFullscreen = true;
       frameWrap.appendChild(iframe);
     } else {
@@ -451,7 +542,23 @@ document.getElementById('layoutControls').addEventListener('click', (e) => {
   renderGrid();
 });
 
-render();
+async function init() {
+
+  await fetchLiveChannels();
+
+  render();
+
+  setInterval(async () => {
+
+    await fetchLiveChannels();
+
+    renderGrid();
+
+  }, 60000);
+
+}
+
+init();
 </script>
 
 </body>
