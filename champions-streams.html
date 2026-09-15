@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Champions Shanghai 2026 — Stream Wall</title>
+<script src="https://embed.twitch.tv/embed/v1.js"></script>
+<style>
+  :root{
+    --bg: #0c0d10;
+    --panel: #131519;
+    --line: #24262b;
+    --red: #ee3245;
+    --red-dim: #7a1a24;
+    --text: #e8e9ec;
+    --text-dim: #8b8e96;
+    --mono: 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace;
+    --sans: 'Inter', -apple-system, 'Segoe UI', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;padding:0;background:var(--bg);color:var(--text);
+    font-family:var(--sans);height:100%;
+  }
+  a{color:inherit;}
+
+  header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:18px 28px;border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg,#131519,#0c0d10);
+  }
+  .title-block{display:flex;align-items:baseline;gap:12px;}
+  .title-block h1{
+    font-size:19px;font-weight:700;letter-spacing:0.2px;margin:0;
+  }
+  .title-block h1 span{color:var(--red);}
+  .title-block .sub{
+    font-family:var(--mono);font-size:12px;color:var(--text-dim);
+  }
+  .layout-controls{display:flex;gap:8px;}
+  .layout-controls button{
+    background:var(--panel);border:1px solid var(--line);color:var(--text-dim);
+    padding:7px 12px;border-radius:4px;font-size:12px;cursor:pointer;
+    font-family:var(--sans);
+  }
+  .layout-controls button.active{
+    border-color:var(--red);color:var(--text);
+  }
+
+  .team-rail{
+    display:flex;gap:6px;overflow-x:auto;padding:14px 28px;
+    border-bottom:1px solid var(--line);background:var(--panel);
+  }
+  .team-btn{
+    flex:0 0 auto;background:var(--bg);border:1px solid var(--line);
+    color:var(--text-dim);padding:8px 14px;border-radius:4px;
+    font-size:13px;cursor:pointer;white-space:nowrap;
+    transition:border-color .12s, color .12s;
+  }
+  .team-btn:hover{color:var(--text);}
+  .team-btn.selected{border-color:var(--red);color:var(--text);background:#1a0d0f;}
+  .team-btn .count{
+    font-family:var(--mono);color:var(--text-dim);margin-left:6px;font-size:11px;
+  }
+
+  main{padding:22px 28px 60px;}
+  .empty-state{
+    text-align:center;color:var(--text-dim);padding:80px 20px;
+    font-family:var(--mono);font-size:13px;
+  }
+
+  .grid{
+    display:grid;gap:16px;
+    grid-template-columns:repeat(var(--cols,2),1fr);
+  }
+  .stream-card{
+    background:var(--panel);border:1px solid var(--line);border-radius:6px;
+    overflow:hidden;display:flex;flex-direction:column;
+  }
+  .stream-card .frame-wrap{
+    position:relative;width:100%;aspect-ratio:16/9;background:#000;
+  }
+  .stream-card iframe{
+    position:absolute;inset:0;width:100%;height:100%;border:0;
+  }
+  .stream-meta{
+    padding:10px 12px;display:flex;align-items:center;justify-content:space-between;
+    border-top:1px solid var(--line);
+  }
+  .stream-meta .name{font-size:13px;font-weight:600;}
+  .stream-meta .team-tag{
+    font-family:var(--mono);font-size:11px;color:var(--red);
+  }
+  .stream-meta .channel{
+    font-family:var(--mono);font-size:11px;color:var(--text-dim);
+  }
+  .placeholder-card{
+    aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;
+    background:repeating-linear-gradient(135deg,#161719,#161719 10px,#131417 10px,#131417 20px);
+    color:var(--text-dim);font-family:var(--mono);font-size:12px;text-align:center;
+    border:1px dashed var(--line);border-radius:6px;padding:16px;
+  }
+
+  footer{
+    padding:20px 28px;color:var(--text-dim);font-size:12px;
+    border-top:1px solid var(--line);font-family:var(--mono);
+  }
+  footer code{background:var(--panel);padding:2px 6px;border-radius:3px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="title-block">
+    <h1>CHAMPIONS <span>2026</span> · SHANGHAI</h1>
+    <div class="sub">STREAM WALL — 16 TEAMS</div>
+  </div>
+  <div class="layout-controls" id="layoutControls">
+    <button data-cols="1">1×</button>
+    <button data-cols="2" class="active">2×</button>
+    <button data-cols="3">3×</button>
+    <button data-cols="4">4×</button>
+  </div>
+</header>
+
+<div class="team-rail" id="teamRail"></div>
+
+<main>
+  <div class="grid" id="grid" style="--cols:2;"></div>
+  <div class="empty-state" id="emptyState" style="display:none;">
+    No channels added for this team yet — edit the TEAMS array in the page source.
+  </div>
+</main>
+
+<footer>
+  Edit the <code>TEAMS</code> array at the top of the &lt;script&gt; block to add real
+  players/casters and their Twitch usernames for each of the 16 qualified teams.
+  Streams embed via the official Twitch Embed Player — no API key required.
+</footer>
+
+<script>
+/* ============================================================
+   EDIT THIS: one entry per team, one entry per player/caster.
+   `channel` = the exact Twitch username (from the URL twitch.tv/<username>)
+   ============================================================ */
+const TEAMS = [
+  {
+    name: "100 Thieves",
+    tag: "100T",
+    players: [
+      { name: "Asuna",     channel: "asunaweeb" },
+      { name: "Cryocells", channel: "cryocells" },
+      { name: "Timotino",  channel: "timotino07" },
+      { name: "vora",      channel: "v0ra" },
+      { name: "bang",      channel: "bangzerra" },
+    ]
+  },
+  { name: "TYLOO", tag: "TLO", players: [
+      { name: "slowly",  channel: "" },
+      { name: "Scales",  channel: "" },
+      { name: "Splash",  channel: "" },
+      { name: "Erv",     channel: "" },
+      { name: "SiuFatBB", channel: "" },
+  ]},
+  { name: "Karmine Corp", tag: "KC", players: [
+      { name: "avez",     channel: "" },
+      { name: "SUYGETSU", channel: "" },
+      { name: "dos9",     channel: "" },
+      { name: "LêwN",     channel: "" },
+      { name: "N4RRATE",  channel: "" },
+  ]},
+  { name: "Global Esports", tag: "GE", players: [
+      { name: "Kr1stal", channel: "" },
+      { name: "UdoTan",  channel: "" },
+      { name: "autumn",  channel: "" },
+      { name: "xavi8k",  channel: "" },
+      { name: "PatMen",  channel: "" },
+  ]},
+  { name: "LOUD", tag: "LOUD", players: [
+      { name: "lukxo",  channel: "" },
+      { name: "Darker", channel: "" },
+      { name: "erde",   channel: "" },
+      { name: "tkzin",  channel: "" },
+      { name: "DaviH",  channel: "" },
+  ]},
+  { name: "JD Gaming", tag: "JDG", players: [
+      { name: "jkuro",       channel: "" },
+      { name: "Yuicaw",      channel: "" },
+      { name: "zhe",         channel: "" },
+      { name: "BerLIN",      channel: "" },
+      { name: "crownfisher", channel: "" },
+  ]},
+  { name: "Team Liquid", tag: "TL", players: [
+      { name: "nAts",  channel: "" },
+      { name: "kamo",  channel: "" },
+      { name: "Kicks", channel: "" },
+      { name: "trexx", channel: "" },
+      { name: "GSR",   channel: "" },
+  ]},
+  { name: "NS RedForce", tag: "NS", players: [
+      { name: "Xross",   channel: "" },
+      { name: "Dambi",   channel: "" },
+      { name: "Francis", channel: "" },
+      { name: "Ivy",     channel: "" },
+      { name: "Rb",      channel: "" },
+  ]},
+  { name: "NRG", tag: "NRG", players: [
+      { name: "Ethan", channel: "" },
+      { name: "mada",  channel: "" },
+      { name: "brawk", channel: "" },
+      { name: "skuba", channel: "" },
+      { name: "keiko", channel: "" },
+  ]},
+  { name: "EDward Gaming", tag: "EDG", players: [
+      { name: "CHICHOO", channel: "" },
+      { name: "nobody",  channel: "" },
+      { name: "ZmjjKK",  channel: "" },
+      { name: "Smoggy",  channel: "" },
+      { name: "stew",    channel: "" },
+  ]},
+  { name: "FUT Esports", tag: "FUT", players: [
+      { name: "yetujey",   channel: "" },
+      { name: "xeus",      channel: "" },
+      { name: "KROSTALY",  channel: "" },
+      { name: "s0pp",      channel: "" },
+      { name: "sociablEE", channel: "" },
+  ]},
+  { name: "Paper Rex", tag: "PRX", players: [
+      { name: "d4v41",     channel: "" },
+      { name: "f0rsakeN",  channel: "" },
+      { name: "something", channel: "" },
+      { name: "Jinggg",    channel: "" },
+      { name: "invy",      channel: "" },
+  ]},
+  { name: "G2 Esports", tag: "G2", players: [
+      { name: "trent",   channel: "" },
+      { name: "valyn",   channel: "" },
+      { name: "leaf",    channel: "" },
+      { name: "jawgemo", channel: "" },
+      { name: "babybay", channel: "" },
+  ]},
+  { name: "XLG Esports", tag: "XLG", players: [
+      { name: "Rarga",    channel: "" },
+      { name: "happywei", channel: "" },
+      { name: "NoMan",    channel: "" },
+      { name: "Lysoar",   channel: "" },
+      { name: "WsLeo",    channel: "" },
+  ]},
+  { name: "Team Vitality", tag: "VIT", players: [
+      { name: "Derke",     channel: "" },
+      { name: "Sayonara",  channel: "" },
+      { name: "Chronicle", channel: "" },
+      { name: "Jamppi",    channel: "" },
+      { name: "PROFEK",    channel: "" },
+  ]},
+  { name: "T1", tag: "T1", players: [
+      { name: "iZu",     channel: "" },
+      { name: "stax",    channel: "" },
+      { name: "Meteor",  channel: "" },
+      { name: "BuZz",    channel: "" },
+      { name: "Munchkin", channel: "" },
+  ]},
+];
+
+let selectedTeam = TEAMS[0].name;
+let cols = 2;
+
+function renderTeamRail(){
+  const rail = document.getElementById('teamRail');
+  rail.innerHTML = '';
+
+  const allBtn = document.createElement('button');
+  allBtn.className = 'team-btn' + (selectedTeam === 'ALL' ? ' selected' : '');
+  allBtn.textContent = 'All teams';
+  allBtn.onclick = () => { selectedTeam = 'ALL'; render(); };
+  rail.appendChild(allBtn);
+
+  TEAMS.forEach(team => {
+    const btn = document.createElement('button');
+    btn.className = 'team-btn' + (selectedTeam === team.name ? ' selected' : '');
+    btn.innerHTML = `${team.name} <span class="count">${team.players.length}</span>`;
+    btn.onclick = () => { selectedTeam = team.name; render(); };
+    rail.appendChild(btn);
+  });
+}
+
+function currentPlayers(){
+  if (selectedTeam === 'ALL'){
+    return TEAMS.flatMap(t => t.players.map(p => ({...p, team: t.name, tag: t.tag})));
+  }
+  const team = TEAMS.find(t => t.name === selectedTeam);
+  return team.players.map(p => ({...p, team: team.name, tag: team.tag}));
+}
+
+function renderGrid(){
+  const grid = document.getElementById('grid');
+  const emptyState = document.getElementById('emptyState');
+  grid.style.setProperty('--cols', cols);
+  grid.innerHTML = '';
+
+  const players = currentPlayers();
+
+  if (players.length === 0){
+    emptyState.style.display = 'block';
+    grid.style.display = 'none';
+    return;
+  }
+  emptyState.style.display = 'none';
+  grid.style.display = 'grid';
+
+  const parentDomain = window.location.hostname || 'localhost';
+
+  players.forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'stream-card';
+
+    const frameWrap = document.createElement('div');
+    frameWrap.className = 'frame-wrap';
+
+    if (p.channel) {
+      const iframe = document.createElement('iframe');
+      iframe.src = `https://player.twitch.tv/?channel=${encodeURIComponent(p.channel)}&parent=${encodeURIComponent(parentDomain)}&muted=true`;
+      iframe.allowFullscreen = true;
+      frameWrap.appendChild(iframe);
+    } else {
+      const ph = document.createElement('div');
+      ph.className = 'placeholder-card';
+      ph.style.position = 'absolute';
+      ph.style.inset = '0';
+      ph.textContent = `No channel set for ${p.name} yet`;
+      frameWrap.appendChild(ph);
+    }
+
+    const meta = document.createElement('div');
+    meta.className = 'stream-meta';
+    meta.innerHTML = `
+      <div>
+        <div class="name">${p.name}</div>
+        <div class="channel">${p.channel ? 'twitch.tv/' + p.channel : '—'}</div>
+      </div>
+      <div class="team-tag">${p.tag}</div>
+    `;
+
+    card.appendChild(frameWrap);
+    card.appendChild(meta);
+    grid.appendChild(card);
+  });
+}
+
+function render(){
+  renderTeamRail();
+  renderGrid();
+}
+
+document.getElementById('layoutControls').addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-cols]');
+  if (!btn) return;
+  cols = parseInt(btn.dataset.cols, 10);
+  document.querySelectorAll('#layoutControls button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderGrid();
+});
+
+render();
+</script>
+
+</body>
+</html>
