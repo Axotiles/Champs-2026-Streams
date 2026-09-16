@@ -7,6 +7,8 @@ const rateLimit = require("express-rate-limit");
 const helmet = require("helmet");
 const bcrypt = require("bcrypt");
 const session = require("express-session");
+const { doubleCsrf } = require("csrf-csrf");
+const cookieParser = require("cookie-parser");
 
 function securityLog(event, details = {}) {
   console.log(
@@ -66,6 +68,30 @@ app.use(
   })
 );
 
+app.use(cookieParser());
+
+const {
+  generateCsrfToken,
+  doubleCsrfProtection
+} = doubleCsrf(
+  {
+  getSecret: () => process.env.CSRF_SECRET,
+  getSessionIdentifier: (req) => req.session.id,
+  cookieName: "csrf-token",
+  cookieOptions: {
+    httpOnly: false,
+    sameSite: "lax",
+    secure: false
+  },
+  size: 64,
+  ignoredMethods: ["GET", "HEAD", "OPTIONS"]
+});
+app.get("/api/csrf-token", (req, res) => {
+  res.json({
+    csrfToken: generateCsrfToken(req, res)
+  });
+});
+
 app.use(
   helmet({
     contentSecurityPolicy: {
@@ -73,7 +99,7 @@ app.use(
         scriptSrc: [
           "'self'",
           "https://embed.twitch.tv",
-          "'sha256-o4bmSLqNu1H7MxuBF7HV0a2FQDJRN7xcBZQp1waQs8E='"
+          "'sha256-R8YUeb6GNNhK3FI1JUr/AJqj10YUiqWt9Y/F5VYw6dY='"
         ],
 
         frameSrc: [
@@ -94,6 +120,8 @@ app.get("/api/health", (req, res) => {
     status: "ok"
   });
 });
+
+
 app.post("/api/login", loginLimiter, async (req, res) => {
   const { username, password } = req.body;
 
@@ -104,9 +132,10 @@ app.post("/api/login", loginLimiter, async (req, res) => {
   }
 
   if (username !== process.env.ADMIN_USERNAME) {
-     securityLog("LOGIN_FAILURE", {
-    username
-  });
+    securityLog("LOGIN_FAILURE", {
+      username
+    });
+
     return res.status(401).json({
       error: "Invalid username or password."
     });
@@ -119,45 +148,24 @@ app.post("/api/login", loginLimiter, async (req, res) => {
 
   if (!passwordMatches) {
     securityLog("LOGIN_FAILURE", {
-    username
-  });
+      username
+    });
+
     return res.status(401).json({
       error: "Invalid username or password."
     });
   }
 
   req.session.user = {
-  username: process.env.ADMIN_USERNAME
-};
+    username: process.env.ADMIN_USERNAME
+  };
 
-securityLog("LOGIN_SUCCESS", {
-  username: process.env.ADMIN_USERNAME
-});
+  securityLog("LOGIN_SUCCESS", {
+    username: process.env.ADMIN_USERNAME
+  });
 
-res.json({
-  message: "Login successful."
-});
-});
-
-app.post("/api/logout", requireAuth, (req, res) => {
-  req.session.destroy((err) => {
-    if (err) {
-      console.error("Session destruction failed.");
-
-      return res.status(500).json({
-        error: "Logout failed."
-      });
-    }
-
-    res.clearCookie("connect.sid");
-
-    securityLog("LOGOUT", {
-      username: req.session?.user?.username
-    });
-
-    res.json({
-      message: "Logout successful."
-    });
+  res.json({
+    message: "Login successful."
   });
 });
 
@@ -170,6 +178,29 @@ function requireAuth(req, res, next) {
 
   next();
 }
+app.post("/api/logout", requireAuth, doubleCsrfProtection, (req, res) => {
+  const username = req.session.user.username;
+
+  req.session.destroy((err) => {
+    if (err) {
+      console.error("Session destruction failed.");
+
+      return res.status(500).json({
+        error: "Logout failed."
+      });
+    }
+
+    res.clearCookie("connect.sid");
+
+    securityLog("LOGOUT", {
+      username
+    });
+
+    res.json({
+      message: "Logout successful."
+    });
+  });
+});
 
 
  app.get("/api/streams", streamsLimiter, requireAuth, async (req, res) => {

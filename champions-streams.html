@@ -321,6 +321,11 @@ loginForm.addEventListener("submit", async (event) => {
 isAuthenticated = true;
 showLiveOnly = true;
 
+const csrfResponse = await fetch("/api/csrf-token");
+const csrfData = await csrfResponse.json();
+
+csrfToken = csrfData.csrfToken;
+
 await init();
 
   } catch (error) {
@@ -333,9 +338,12 @@ const logoutButton = document.getElementById("logout-button");
 logoutButton.addEventListener("click", async () => {
   try {
     const response = await fetch("/api/logout", {
-      method: "POST",
-      credentials: "include"
-    });
+  method: "POST",
+  headers: {
+    "X-CSRF-Token": csrfToken
+  },
+  credentials: "include"
+});
 
     const data = await response.json();
 
@@ -547,6 +555,7 @@ renderGrid();
     let liveRefreshInterval = null;
     let showLiveOnly = true;
     let liveChannels = new Set();
+    let csrfToken = null;
 
     function renderTeamRail() {
       const rail = document.getElementById('teamRail');
