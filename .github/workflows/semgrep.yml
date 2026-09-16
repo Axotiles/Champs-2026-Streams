@@ -10,15 +10,20 @@ on:
       - main
       - feature/backend-api
 
+permissions:
+  contents: read
+
 jobs:
   semgrep:
+    name: semgrep/ci
     runs-on: ubuntu-latest
+
+    container:
+      image: semgrep/semgrep
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Run Semgrep
-        uses: semgrep/semgrep-action@v1
-        with:
-          config: p/javascript
+        run: semgrep scan --config p/javascript
