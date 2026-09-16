@@ -1,0 +1,24 @@
+name: Semgrep Security Scan
+
+on:
+  push:
+    branches:
+      - main
+      - feature/backend-api
+  pull_request:
+    branches:
+      - main
+      - feature/backend-api
+
+jobs:
+  semgrep:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: p/javascript
