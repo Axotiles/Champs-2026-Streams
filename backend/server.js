@@ -57,6 +57,7 @@ app.use(express.json());
 
 app.use(
   session({
+    name: "champions.sid",
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
@@ -65,7 +66,8 @@ app.use(
   secure: process.env.NODE_ENV === "production",
   sameSite: "lax",
   path: "/",
-  maxAge: 60 * 60 * 1000
+  maxAge: 60 * 60 * 1000,
+  expires: new Date(Date.now() + 60 * 60 * 1000),
 }
   })
 );
