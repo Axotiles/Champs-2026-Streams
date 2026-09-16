@@ -73,7 +73,7 @@ app.use(
         scriptSrc: [
           "'self'",
           "https://embed.twitch.tv",
-          "'sha256-9mf8I/g8Ndu3q9Hq7R8QcQwQN0kLGxIHDa6voQsYDJQ='"
+          "'sha256-VOiYCW8zxzdUdWyHd7md77GQdVJivjFS4nhvfbLoxjA='"
         ],
 
         frameSrc: [
@@ -137,6 +137,28 @@ securityLog("LOGIN_SUCCESS", {
 res.json({
   message: "Login successful."
 });
+});
+
+app.post("/api/logout", requireAuth, (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      console.error("Session destruction failed.");
+
+      return res.status(500).json({
+        error: "Logout failed."
+      });
+    }
+
+    res.clearCookie("connect.sid");
+
+    securityLog("LOGOUT", {
+      username: req.session?.user?.username
+    });
+
+    res.json({
+      message: "Logout successful."
+    });
+  });
 });
 
 function requireAuth(req, res, next) {

@@ -229,6 +229,33 @@
 
 <body>
 
+  <div id="login-panel">
+  <h2>Admin Login</h2>
+
+  <form id="login-form">
+    <input
+      type="text"
+      id="login-username"
+      placeholder="Username"
+      autocomplete="username"
+      required
+    >
+
+    <input
+      type="password"
+      id="login-password"
+      placeholder="Password"
+      autocomplete="current-password"
+      required
+    >
+
+    <button type="submit">Login</button>
+<button type="button" id="logout-button">Logout</button>
+
+<p id="login-error"></p>
+  </form>
+</div>
+
   <header>
     <div class="title-block">
       <h1>CHAMPIONS <span>2026</span> · SHANGHAI</h1>
@@ -258,6 +285,73 @@
   </footer>
 
   <script>
+    const loginForm = document.getElementById("login-form");
+const loginError = document.getElementById("login-error");
+
+loginForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const username = document.getElementById("login-username").value;
+  const password = document.getElementById("login-password").value;
+
+  loginError.textContent = "";
+
+  try {
+    const response = await fetch("/api/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      credentials: "include",
+      body: JSON.stringify({
+        username,
+        password
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      loginError.textContent = data.error || "Login failed.";
+      return;
+    }
+
+    loginError.textContent = "Login successful.";
+
+await init();
+
+  } catch (error) {
+    console.error("Login error:", error);
+    loginError.textContent = "Unable to connect to the server.";
+  }
+});
+const logoutButton = document.getElementById("logout-button");
+
+logoutButton.addEventListener("click", async () => {
+  try {
+    const response = await fetch("/api/logout", {
+      method: "POST",
+      credentials: "include"
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      loginError.textContent = data.error || "Logout failed.";
+      return;
+    }
+
+    loginError.textContent = "Logged out.";
+
+    liveChannels.clear();
+    renderGrid();
+
+  } catch (error) {
+    console.error("Logout error:", error);
+    loginError.textContent = "Unable to connect to the server.";
+  }
+});
+
     /* ============================================================
        EDIT THIS: one entry per team, one entry per player/caster.
        `channel` = the exact Twitch username (from the URL twitch.tv/<username>)
@@ -339,7 +433,7 @@
       },
       {
         name: "NS RedForce", tag: "NS", players: [
-          { name: "Xross", channel: "" },
+          { name: "Xross", channel: "meiy_vl" },
           { name: "Dambi", channel: "" },
           { name: "Francis", channel: "" },
           { name: "Ivy", channel: "" },
@@ -709,30 +803,24 @@ meta.appendChild(teamTag);
     });
 
     async function init() {
+  await fetchLiveChannels();
+  render();
 
-      await fetchLiveChannels();
+  setInterval(async () => {
+    const oldLiveChannels = new Set(liveChannels);
 
-      render();
+    await fetchLiveChannels();
 
-      setInterval(async () => {
+    const liveStatusChanged =
+      oldLiveChannels.size !== liveChannels.size ||
+      [...oldLiveChannels].some(channel => !liveChannels.has(channel));
 
-        const oldLiveChannels = new Set(liveChannels);
-
-        await fetchLiveChannels();
-
-        const liveStatusChanged =
-          oldLiveChannels.size !== liveChannels.size ||
-          [...oldLiveChannels].some(channel => !liveChannels.has(channel));
-
-        if (liveStatusChanged) {
-          renderGrid();
-        }
-
-      }, 60000);
-
+    if (liveStatusChanged) {
+      renderGrid();
     }
+  }, 60000);
+}
 
-    init();
   </script>
 
 </body>
