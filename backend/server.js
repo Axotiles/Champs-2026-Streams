@@ -25,6 +25,43 @@ app.get("/api/health", (req, res) => {
 });
 
  app.get("/api/streams", async (req, res) => {
+  const userLogins = req.query.user_login;
+
+if (!userLogins) {
+  return res.status(400).json({
+    error: "user_login is required."
+  });
+}
+
+const logins = Array.isArray(userLogins)
+  ? userLogins
+  : [userLogins];
+
+  if (logins.length > 60) {
+  return res.status(400).json({
+    error: "Too many user_login values."
+  });
+}
+
+for (const login of logins) {
+  if (typeof login !== "string") {
+    return res.status(400).json({
+      error: "user_login must be a string."
+    });
+  }
+  if (login.length > 25) {
+  return res.status(400).json({
+    error: "user_login is too long."
+  });
+}
+
+  if (!/^[a-zA-Z0-9_]+$/.test(login)) {
+    return res.status(400).json({
+      error: "Invalid user_login format."
+    });
+  }
+}
+
   try {
     const params = new URLSearchParams();
 
