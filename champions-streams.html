@@ -318,6 +318,9 @@ loginForm.addEventListener("submit", async (event) => {
 
     loginError.textContent = "Login successful.";
 
+isAuthenticated = true;
+showLiveOnly = true;
+
 await init();
 
   } catch (error) {
@@ -343,8 +346,16 @@ logoutButton.addEventListener("click", async () => {
 
     loginError.textContent = "Logged out.";
 
-    liveChannels.clear();
-    renderGrid();
+    isAuthenticated = false;
+
+if (liveRefreshInterval) {
+  clearInterval(liveRefreshInterval);
+  liveRefreshInterval = null;
+}
+
+liveChannels.clear();
+showLiveOnly = true;
+renderGrid();
 
   } catch (error) {
     console.error("Logout error:", error);
@@ -416,7 +427,7 @@ logoutButton.addEventListener("click", async () => {
       {
         name: "JD Gaming", tag: "JDG", players: [
           { name: "jkuro", channel: "zikzlol" },
-          { name: "Yuicaw", channel: "" },
+          { name: "Yuicaw", channel: "zikzlol247" },
           { name: "zhe", channel: "" },
           { name: "BerLIN", channel: "" },
           { name: "crownfisher", channel: "" },
@@ -532,6 +543,8 @@ logoutButton.addEventListener("click", async () => {
 
     const expandedRegions = new Set();
 
+    let isAuthenticated = false;
+    let liveRefreshInterval = null;
     let showLiveOnly = true;
     let liveChannels = new Set();
 
@@ -547,6 +560,9 @@ logoutButton.addEventListener("click", async () => {
       liveBtn.textContent = '🔴 LIVE NOW';
 
       liveBtn.onclick = () => {
+         if (!isAuthenticated) {
+    return;
+  }
 
         showLiveOnly = !showLiveOnly;
 
@@ -639,6 +655,10 @@ logoutButton.addEventListener("click", async () => {
     }
 
     async function fetchLiveChannels() {
+
+        if (!isAuthenticated) {
+  return;
+}
 
       const channels = TEAMS
         .flatMap(team => team.players)
@@ -789,9 +809,9 @@ meta.appendChild(teamTag);
     }
 
     function render() {
-      renderTeamRail();
-      renderGrid();
-    }
+  renderTeamRail();
+  renderGrid();
+}
 
     document.getElementById('layoutControls').addEventListener('click', (e) => {
       const btn = e.target.closest('button[data-cols]');
@@ -806,19 +826,19 @@ meta.appendChild(teamTag);
   await fetchLiveChannels();
   render();
 
-  setInterval(async () => {
-    const oldLiveChannels = new Set(liveChannels);
+  liveRefreshInterval = setInterval(async () => {
+  const oldLiveChannels = new Set(liveChannels);
 
-    await fetchLiveChannels();
+  await fetchLiveChannels();
 
-    const liveStatusChanged =
-      oldLiveChannels.size !== liveChannels.size ||
-      [...oldLiveChannels].some(channel => !liveChannels.has(channel));
+  const liveStatusChanged =
+    oldLiveChannels.size !== liveChannels.size ||
+    [...oldLiveChannels].some(channel => !liveChannels.has(channel));
 
-    if (liveStatusChanged) {
-      renderGrid();
-    }
-  }, 60000);
+  if (liveStatusChanged) {
+    renderGrid();
+  }
+}, 60000);
 }
 
   </script>

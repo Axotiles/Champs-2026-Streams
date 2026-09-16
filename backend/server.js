@@ -73,7 +73,7 @@ app.use(
         scriptSrc: [
           "'self'",
           "https://embed.twitch.tv",
-          "'sha256-VOiYCW8zxzdUdWyHd7md77GQdVJivjFS4nhvfbLoxjA='"
+          "'sha256-o4bmSLqNu1H7MxuBF7HV0a2FQDJRN7xcBZQp1waQs8E='"
         ],
 
         frameSrc: [
