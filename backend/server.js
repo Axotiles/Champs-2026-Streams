@@ -4,6 +4,7 @@ const axios = require("axios");
 const path = require("path");
 require("dotenv").config();
 const rateLimit = require("express-rate-limit");
+const helmet = require("helmet");
 
 const streamsLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -23,6 +24,25 @@ if (!process.env.TWITCH_CLIENT_ID || !process.env.TWITCH_ACCESS_TOKEN) {
 console.log("Twitch environment variables loaded.");
 
 const app = express();
+
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        scriptSrc: [
+          "'self'",
+          "https://embed.twitch.tv",
+          "'sha256-XlrEqTKD1IYsdOLEGMRikpfylvUICeX4Y0553dtmLDk='"
+        ],
+
+        frameSrc: [
+          "'self'",
+          "https://player.twitch.tv"
+        ]
+      }
+    }
+  })
+);
 
 app.use(express.static(path.join(__dirname, "..")));
 
