@@ -7,6 +7,199 @@
   <title>Champions Shanghai 2026 — Stream Wall</title>
   <script src="https://embed.twitch.tv/embed/v1.js"></script>
   <style>
+    /* =========================
+   LOGIN
+   ========================= */
+
+#login-panel {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  background:
+    radial-gradient(circle at 50% 35%, rgba(238, 50, 69, 0.10), transparent 35%),
+    linear-gradient(135deg, #090a0d 0%, #0c0d10 45%, #090a0d 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+#login-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: linear-gradient(to bottom, transparent, black 25%, black 75%, transparent);
+  pointer-events: none;
+}
+
+.login-card {
+  width: min(420px, 100%);
+  background: rgba(19, 21, 25, 0.96);
+  border: 1px solid #2b2d33;
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.55),
+    0 0 40px rgba(238, 50, 69, 0.06);
+  position: relative;
+  z-index: 1;
+  padding: 34px;
+}
+
+.login-accent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--red), transparent);
+}
+
+.login-header {
+  margin-bottom: 30px;
+}
+
+.login-kicker {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--red);
+  margin-bottom: 8px;
+}
+
+.login-header h2 {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.8px;
+}
+
+.login-header p {
+  margin: 7px 0 0;
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+#login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+#login-form label {
+  margin-top: 8px;
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--text-dim);
+}
+
+#login-form input {
+  width: 100%;
+  background: #0b0c0f;
+  border: 1px solid #292b31;
+  color: var(--text);
+  padding: 13px 14px;
+  border-radius: 4px;
+  outline: none;
+  font-family: var(--sans);
+  font-size: 13px;
+  transition:
+    border-color .15s ease,
+    box-shadow .15s ease,
+    background .15s ease;
+}
+
+#login-form input::placeholder {
+  color: #555861;
+}
+
+#login-form input:focus {
+  background: #101115;
+  border-color: var(--red);
+  box-shadow: 0 0 0 3px rgba(238, 50, 69, 0.08);
+}
+
+.login-button {
+  margin-top: 14px;
+  width: 100%;
+  border: 1px solid var(--red);
+  background: var(--red);
+  color: white;
+  padding: 13px 14px;
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition:
+    background .15s ease,
+    transform .15s ease,
+    box-shadow .15s ease;
+}
+
+.login-button:hover {
+  background: #ff4655;
+  box-shadow: 0 8px 25px rgba(238, 50, 69, 0.22);
+  transform: translateY(-1px);
+}
+
+.login-arrow {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.logout-button {
+  width: 100%;
+  margin-top: 4px;
+  padding: 10px 14px;
+  border: 1px solid #292b31;
+  background: transparent;
+  color: var(--text-dim);
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition:
+    border-color .15s ease,
+    color .15s ease,
+    background .15s ease;
+}
+
+.logout-button:hover {
+  border-color: #555861;
+  color: var(--text);
+  background: #17181c;
+}
+
+#login-error {
+  min-height: 18px;
+  margin: 8px 0 0;
+  color: var(--red);
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.login-footer {
+  margin-top: 26px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  color: #555861;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-align: center;
+}
     :root {
       --bg: #0c0d10;
       --panel: #131519;
@@ -230,30 +423,53 @@
 <body>
 
   <div id="login-panel">
-  <h2>Admin Login</h2>
+  <div class="login-card">
 
-  <form id="login-form">
-    <input
-      type="text"
-      id="login-username"
-      placeholder="Username"
-      autocomplete="username"
-      required
-    >
+    <div class="login-accent"></div>
 
-    <input
-      type="password"
-      id="login-password"
-      placeholder="Password"
-      autocomplete="current-password"
-      required
-    >
+    <div class="login-header">
+      <div class="login-kicker">CHAMPIONS 2026</div>
+      <h2>STREAM WALL</h2>
+      <p>Shanghai · Private Access</p>
+    </div>
 
-    <button type="submit">Login</button>
-<button type="button" id="logout-button">Logout</button>
+    <form id="login-form">
 
-<p id="login-error"></p>
-  </form>
+      <label for="login-username">Username</label>
+      <input
+        type="text"
+        id="login-username"
+        placeholder="Enter username"
+        autocomplete="username"
+        required
+      >
+
+      <label for="login-password">Password</label>
+      <input
+        type="password"
+        id="login-password"
+        placeholder="Enter password"
+        autocomplete="current-password"
+        required
+      >
+
+      <button type="submit" class="login-button">
+        <span>LOGIN</span>
+        <span class="login-arrow">→</span>
+      </button>
+
+      <button type="button" id="logout-button" class="logout-button">
+        LOG OUT
+      </button>
+
+      <p id="login-error"></p>
+    </form>
+
+    <div class="login-footer">
+      AUTHORIZED ACCESS ONLY
+    </div>
+
+  </div>
 </div>
 
   <header>
@@ -326,6 +542,8 @@ const csrfData = await csrfResponse.json();
 
 csrfToken = csrfData.csrfToken;
 
+document.getElementById("login-panel").style.display = "none";
+
 await init();
 
   } catch (error) {
@@ -355,6 +573,8 @@ logoutButton.addEventListener("click", async () => {
     loginError.textContent = "Logged out.";
 
     isAuthenticated = false;
+
+    document.getElementById("login-panel").style.display = "flex";
 
 if (liveRefreshInterval) {
   clearInterval(liveRefreshInterval);
