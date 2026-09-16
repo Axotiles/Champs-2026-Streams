@@ -1,6 +1,7 @@
 const express = require("express");
 const dotenv = require("dotenv");
 const axios = require("axios");
+const path = require("path");
 
 dotenv.config();
 
@@ -12,6 +13,9 @@ if (!process.env.TWITCH_CLIENT_ID || !process.env.TWITCH_ACCESS_TOKEN) {
 console.log("Twitch environment variables loaded.");
 
 const app = express();
+
+app.use(express.static(path.join(__dirname, "..")));
+
 const PORT = 3000;
 
 app.get("/api/health", (req, res) => {
@@ -22,16 +26,38 @@ app.get("/api/health", (req, res) => {
 
  app.get("/api/streams", async (req, res) => {
   try {
-    const response = await axios.get("https://api.twitch.tv/helix/streams", {
-      headers: {
-        "Client-ID": process.env.TWITCH_CLIENT_ID,
-        "Authorization": `Bearer ${process.env.TWITCH_ACCESS_TOKEN}`
+    const params = new URLSearchParams();
+
+    if (Array.isArray(req.query.user_login)) {
+      req.query.user_login.forEach(login => {
+        params.append("user_login", login);
+      });
+    } else if (req.query.user_login) {
+      params.append("user_login", req.query.user_login);
+    }
+
+    const response = await axios.get(
+      `https://api.twitch.tv/helix/streams?${params.toString()}`,
+      {
+        headers: {
+          "Client-ID": process.env.TWITCH_CLIENT_ID,
+          "Authorization": `Bearer ${process.env.TWITCH_ACCESS_TOKEN}`
+        }
       }
-    });
+    );
 
     res.json(response.data);
+
   } catch (error) {
     console.error("Twitch API request failed.");
+
+    if (error.response) {
+      console.error("Twitch status:", error.response.status);
+      console.error("Twitch response:", error.response.data);
+    } else {
+      console.error("Error:", error.message);
+    }
+
     res.status(500).json({
       error: "Failed to fetch Twitch streams."
     });

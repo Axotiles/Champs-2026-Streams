@@ -143,8 +143,6 @@
    EDIT THIS: one entry per team, one entry per player/caster.
    `channel` = the exact Twitch username (from the URL twitch.tv/<username>)
    ============================================================ */
-  const TWITCH_CLIENT_ID = "1hwgxkzfmawdgbgainsrzw8q6iq4yf";
-const TWITCH_ACCESS_TOKEN = "dmyymh188bwoob5p3c7qwgmonmtuih";
   const REGIONS = [
   {
     name: "AMERICAS",
@@ -197,7 +195,7 @@ const TEAMS = [
       { name: "PatMen",  channel: "patmenvlr" },
   ]},
   { name: "JD Gaming", tag: "JDG", players: [
-      { name: "jkuro",       channel: "" },
+      { name: "jkuro",       channel: "zikzlol" },
       { name: "Yuicaw",      channel: "" },
       { name: "zhe",         channel: "" },
       { name: "BerLIN",      channel: "" },
@@ -309,7 +307,7 @@ liveBtn.onclick = () => {
 
   showLiveOnly = !showLiveOnly;
 
-  renderGrid();
+  render();
 
 };
 
@@ -404,21 +402,17 @@ async function fetchLiveChannels() {
 
   try {
 
-    const response = await fetch(
-      `https://api.twitch.tv/helix/streams?${query}`,
-      {
-        headers: {
-          "Client-Id": "1hwgxkzfmawdgbgainsrzw8q6iq4yf",
-          "Authorization": `Bearer ${dmyymh188bwoob5p3c7qwgmonmtuih}`
-        }
-      }
-    );
+   const response = await fetch(`/api/streams?${query}`);
 
-    const data = await response.json();
+   const data = await response.json();
 
-    liveChannels.clear();
+if (!response.ok) {
+  throw new Error(data.error || "Backend request failed");
+}
 
-    data.data.forEach(stream => {
+liveChannels.clear();
+
+data.data.forEach(stream => {
       liveChannels.add(stream.user_login.toLowerCase());
     });
 
