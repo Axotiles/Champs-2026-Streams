@@ -5,12 +5,38 @@ const path = require("path");
 require("dotenv").config();
 const rateLimit = require("express-rate-limit");
 const helmet = require("helmet");
+const bcrypt = require("bcrypt");
+const session = require("express-session");
+
+function securityLog(event, details = {}) {
+  console.log(
+    `[SECURITY] ${new Date().toISOString()} ${event}`,
+    details
+  );
+}
 
 const streamsLimiter = rateLimit({
   windowMs: 60 * 1000,
   limit: 30,
   message: {
     error: "Too many requests. Please try again later."
+  }
+});
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  message: {
+    error: "Too many login attempts. Please try again later."
+  },
+  handler: (req, res) => {
+    securityLog("LOGIN_RATE_LIMIT", {
+      ip: req.ip
+    });
+
+    res.status(429).json({
+      error: "Too many login attempts. Please try again later."
+    });
   }
 });
 
@@ -25,6 +51,21 @@ console.log("Twitch environment variables loaded.");
 
 const app = express();
 
+app.use(express.json());
+
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax"
+    }
+  })
+);
+
 app.use(
   helmet({
     contentSecurityPolicy: {
@@ -32,7 +73,7 @@ app.use(
         scriptSrc: [
           "'self'",
           "https://embed.twitch.tv",
-          "'sha256-XlrEqTKD1IYsdOLEGMRikpfylvUICeX4Y0553dtmLDk='"
+          "'sha256-9mf8I/g8Ndu3q9Hq7R8QcQwQN0kLGxIHDa6voQsYDJQ='"
         ],
 
         frameSrc: [
@@ -53,8 +94,63 @@ app.get("/api/health", (req, res) => {
     status: "ok"
   });
 });
+app.post("/api/login", loginLimiter, async (req, res) => {
+  const { username, password } = req.body;
 
- app.get("/api/streams", streamsLimiter, async (req, res) => {
+  if (!username || !password) {
+    return res.status(400).json({
+      error: "Username and password are required."
+    });
+  }
+
+  if (username !== process.env.ADMIN_USERNAME) {
+     securityLog("LOGIN_FAILURE", {
+    username
+  });
+    return res.status(401).json({
+      error: "Invalid username or password."
+    });
+  }
+
+  const passwordMatches = await bcrypt.compare(
+    password,
+    process.env.ADMIN_PASSWORD_HASH
+  );
+
+  if (!passwordMatches) {
+    securityLog("LOGIN_FAILURE", {
+    username
+  });
+    return res.status(401).json({
+      error: "Invalid username or password."
+    });
+  }
+
+  req.session.user = {
+  username: process.env.ADMIN_USERNAME
+};
+
+securityLog("LOGIN_SUCCESS", {
+  username: process.env.ADMIN_USERNAME
+});
+
+res.json({
+  message: "Login successful."
+});
+});
+
+function requireAuth(req, res, next) {
+  if (!req.session.user) {
+    return res.status(401).json({
+      error: "Authentication required."
+    });
+  }
+
+  next();
+}
+
+
+ app.get("/api/streams", streamsLimiter, requireAuth, async (req, res) => {
   const userLogins = req.query.user_login;
 
 if (!userLogins) {
