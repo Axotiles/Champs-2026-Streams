@@ -2,6 +2,16 @@ const express = require("express");
 const dotenv = require("dotenv");
 const axios = require("axios");
 const path = require("path");
+require("dotenv").config();
+const rateLimit = require("express-rate-limit");
+
+const streamsLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 30,
+  message: {
+    error: "Too many requests. Please try again later."
+  }
+});
 
 dotenv.config();
 
@@ -24,7 +34,7 @@ app.get("/api/health", (req, res) => {
   });
 });
 
- app.get("/api/streams", async (req, res) => {
+ app.get("/api/streams", streamsLimiter, async (req, res) => {
   const userLogins = req.query.user_login;
 
 if (!userLogins) {
